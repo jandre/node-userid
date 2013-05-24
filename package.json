@@ -1,7 +1,7 @@
 {
   "name": "userid",
   "version": "0.1.0",
-  "description": "lookup uid and gid information in node.js",
+  "description": "Lookup uid and gid information in node.js. Uses native POSIX bindings, not processes.",
   "main": "lib/userid.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
