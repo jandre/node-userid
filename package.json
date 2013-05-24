@@ -1,0 +1,14 @@
+{
+  "name": "userid",
+  "version": "0.1.0",
+  "description": "methods to get userid/groupid info",
+  "main": "lib/userid.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node-gyp rebuild"
+  },
+  "repository": "",
+  "author": "Jen Andre <jandre@gmail.com>",
+  "license": "GPLv3",
+  "gypfile": true
+}
