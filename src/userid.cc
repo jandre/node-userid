@@ -9,6 +9,15 @@
 #include <unistd.h>
 #include <grp.h>
 #include <pwd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <grp.h>
+#include <pwd.h>
+#include <string.h>
+#include <errno.h>
+#include <stdlib.h>
 
 using namespace node;
 using namespace v8;
@@ -39,7 +48,7 @@ Handle<Value> GroupName(const Arguments& args)
   }
 
   if (group) {
-    return String::New(group->gr_name);
+    return scope.Close(String::New(group->gr_name));
   } else {
     return ThrowException(Exception::Error(String::New("gid not found")));
   } 
@@ -49,19 +58,17 @@ Handle<Value> Gid(const Arguments& args)
 {
   HandleScope scope;
   struct group *group = NULL;
-  const char *name = "";
 
   if (args.Length() > 0 && args[0]->IsString()) {
     String::Utf8Value utfname(args[0]->ToString());
-    name = *utfname; 
+    group = getgrnam(*utfname);
   } else {
     return ThrowException(Exception::Error(String::New("you must supply the groupname")));
   }
 
-  group = getgrnam(name);
 
   if (group) {
-    return Number::New(group->gr_gid);
+    return scope.Close(Number::New(group->gr_gid));
   } else {
     return ThrowException(Exception::Error(String::New("groupname not found")));
   } 
@@ -82,7 +89,7 @@ Handle<Value> UserName(const Arguments& args)
 
 
   if (user) {
-    return String::New(user->pw_name);
+    return scope.Close(String::New(user->pw_name));
   } else {
     return ThrowException(Exception::Error(String::New("uid not found")));
   } 
@@ -92,16 +99,14 @@ Handle<Value> Uid(const Arguments& args)
 {
   HandleScope scope;
   struct passwd *user = NULL;
-  const char *name = "";
 
   if (args.Length() > 0 && args[0]->IsString()) {
     String::Utf8Value utfname(args[0]->ToString());
-    name = *utfname; 
+    user = getpwnam(*utfname);
   } else {
     return ThrowException(Exception::Error(String::New("you must supply the username")));
   }
 
-  user = getpwnam(name);
 
   if (user) {
     Local<Object> obj = Object::New();
@@ -109,6 +114,7 @@ Handle<Value> Uid(const Arguments& args)
     obj->Set(String::New("gid"), Number::New(user->pw_gid));
     return scope.Close(obj);
   } else {
+    fprintf(stderr, "Error: %s\n", strerror(errno));
     return ThrowException(Exception::Error(String::New("username not found")));
   } 
 }
