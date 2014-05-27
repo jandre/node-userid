@@ -114,7 +114,6 @@ Handle<Value> Uid(const Arguments& args)
     obj->Set(String::New("gid"), Number::New(user->pw_gid));
     return scope.Close(obj);
   } else {
-    fprintf(stderr, "Error: %s\n", strerror(errno));
     return ThrowException(Exception::Error(String::New("username not found")));
   } 
 }
