@@ -13,5 +13,8 @@
   },
   "author": "Jen Andre <jandre@gmail.com>",
   "license": "GPLv3",
-  "gypfile": true
+  "gypfile": true,
+  "dependencies": {
+    "nan": "^1.4.1"
+  }
 }

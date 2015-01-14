@@ -18,103 +18,106 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <nan.h>
 
-using namespace node;
 using namespace v8;
+using namespace node;
 
-Handle<Value> Uid(const Arguments& args);
-Handle<Value> UserName(const Arguments& args);
-Handle<Value> GroupName(const Arguments& args);
-Handle<Value> Gid(const Arguments& args);
+NAN_METHOD(Uid);
+NAN_METHOD(UserName);
+NAN_METHOD(GroupName);
+NAN_METHOD(Gid);
 
 void Init(Handle<Object> target)
 {
-  HandleScope scope;
-  target->Set(String::NewSymbol("uid"), FunctionTemplate::New(Uid)->GetFunction());
-  target->Set(String::NewSymbol("username"), FunctionTemplate::New(UserName)->GetFunction());
-  target->Set(String::NewSymbol("gid"), FunctionTemplate::New(Gid)->GetFunction());
-  target->Set(String::NewSymbol("groupname"), FunctionTemplate::New(GroupName)->GetFunction());
+  NanScope();
+  target->Set(NanNew<String>("uid"), NanNew<FunctionTemplate>(Uid)->GetFunction());
+  target->Set(NanNew<String>("username"), NanNew<FunctionTemplate>(UserName)->GetFunction());
+  target->Set(NanNew<String>("gid"), NanNew<FunctionTemplate>(Gid)->GetFunction());
+  target->Set(NanNew<String>("groupname"), NanNew<FunctionTemplate>(GroupName)->GetFunction());
 };
 
-Handle<Value> GroupName(const Arguments& args)
+NAN_METHOD(GroupName)
 {
-  HandleScope scope;
+  NanScope();
   struct group *group = NULL;
 
   if (args.Length() > 0 && args[0]->IsInt32()) {
     group = getgrgid(args[0]->Int32Value());
   } else {
-    return ThrowException(Exception::Error(String::New("you must supply the gid")));
+    NanThrowError("you must supply the gid");
   }
 
   if (group) {
-    return scope.Close(String::New(group->gr_name));
+    NanReturnValue(NanNew<String>(group->gr_name));
   } else {
-    return ThrowException(Exception::Error(String::New("gid not found")));
+    NanThrowError("gid not found");
   } 
 }
 
-Handle<Value> Gid(const Arguments& args)
+NAN_METHOD(Gid)
 {
-  HandleScope scope;
+  NanScope();
   struct group *group = NULL;
 
   if (args.Length() > 0 && args[0]->IsString()) {
     String::Utf8Value utfname(args[0]->ToString());
     group = getgrnam(*utfname);
   } else {
-    return ThrowException(Exception::Error(String::New("you must supply the groupname")));
+    NanThrowError("you must supply the groupname");
   }
 
 
   if (group) {
-    return scope.Close(Number::New(group->gr_gid));
+    NanReturnValue(NanNew<Integer>(group->gr_gid));
   } else {
-    return ThrowException(Exception::Error(String::New("groupname not found")));
+    NanThrowError("groupname not found");
   } 
 }
 
 
 
-Handle<Value> UserName(const Arguments& args)
+NAN_METHOD(UserName)
 {
-  HandleScope scope;
+  NanScope();
   struct passwd *user = NULL;
 
   if (args.Length() > 0 && args[0]->IsInt32()) {
     user = getpwuid(args[0]->Int32Value());
   } else {
-    return ThrowException(Exception::Error(String::New("you must supply the uid")));
+    NanThrowError("you must supply the uid");
   }
 
 
   if (user) {
-    return scope.Close(String::New(user->pw_name));
+    NanReturnValue(NanNew<String>(user->pw_name));
   } else {
-    return ThrowException(Exception::Error(String::New("uid not found")));
+    NanThrowError("uid not found");
   } 
 }
 
-Handle<Value> Uid(const Arguments& args)
+NAN_METHOD(Uid)
 {
-  HandleScope scope;
+  NanScope();
   struct passwd *user = NULL;
 
   if (args.Length() > 0 && args[0]->IsString()) {
     String::Utf8Value utfname(args[0]->ToString());
     user = getpwnam(*utfname);
   } else {
-    return ThrowException(Exception::Error(String::New("you must supply the username")));
+    NanThrowError("you must supply the username");
   }
 
 
-  if (user) {
-    Local<Object> obj = Object::New();
-    obj->Set(String::New("uid"), Number::New(user->pw_uid));
-    obj->Set(String::New("gid"), Number::New(user->pw_gid));
-    return scope.Close(obj);
+  if (user ) {
+    v8::Local<v8::Object> obj = NanNew<Object>();
+    obj->Set(NanNew<String>("uid"), NanNew<Number>(user->pw_uid));
+    obj->Set(NanNew<String>("gid"), NanNew<Number>(user->pw_gid));
+   
+    NanReturnValue(obj);
   } else {
-    return ThrowException(Exception::Error(String::New("username not found")));
+    //fprintf(stderr, "Error: %s\n", strerror(errno));
+    NanThrowError("username not found");
   } 
 }
 
