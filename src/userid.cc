@@ -7,11 +7,6 @@
 #include <node.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <grp.h>
-#include <pwd.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <grp.h>
 #include <pwd.h>
@@ -66,7 +61,7 @@ NAN_METHOD(GroupName)
 NAN_METHOD(Gids)
 {
   NanScope();
-  int j, ngroups = 10;
+  int j, ngroups = 4;
   gid_t *groups;
   struct passwd *pw;
   Local<Array> jsGroups = NanNew<Array>();
@@ -82,23 +77,26 @@ NAN_METHOD(Gids)
       return NanThrowError("generating groups: ");
   }
 
-
-    pw = getpwnam(*utfname);
-    if (pw == NULL) {
-        return NanThrowError("getpwnam");
-    }
-
-    if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
-        return NanThrowError("getgrouplist");
-    }
-
-    for (j = 0; j < ngroups; j++) {
-        jsGroups->Set(j, NanNew<Number>(groups[j]));
-    }
-
-    delete[] groups;
-
-    NanReturnValue(jsGroups);
+  pw = getpwnam(*utfname);
+  if (pw == NULL) {
+      return NanThrowError("getpwnam");
+  }
+  
+  if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
+      delete[] groups;
+      groups = new gid_t[ngroups];
+  
+      if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
+          return NanThrowError("getgrouplist");
+      }
+  }
+  
+  for (j = 0; j < ngroups; j++) {
+      jsGroups->Set(j, NanNew<Number>(groups[j]));
+  }
+  
+  delete[] groups;
+  NanReturnValue(jsGroups);
 }
 
 NAN_METHOD(Gid)
