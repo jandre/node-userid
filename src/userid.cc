@@ -27,6 +27,8 @@ NAN_METHOD(Uid);
 NAN_METHOD(UserName);
 NAN_METHOD(GroupName);
 NAN_METHOD(Gid);
+NAN_METHOD(Gids);
+NAN_METHOD(GroupList);
 
 void Init(Handle<Object>target)
 {
@@ -37,6 +39,8 @@ void Init(Handle<Object>target)
                 UserName)->GetFunction());
   target->Set(NanNew<String>("gid"),       NanNew<FunctionTemplate>(
                 Gid)->GetFunction());
+  target->Set(NanNew<String>("gids"),       NanNew<FunctionTemplate>(
+                Gids)->GetFunction());
   target->Set(NanNew<String>("groupname"), NanNew<FunctionTemplate>(
                 GroupName)->GetFunction());
 }
@@ -57,6 +61,44 @@ NAN_METHOD(GroupName)
   } else {
     return NanThrowError("gid not found");
   }
+}
+
+NAN_METHOD(Gids)
+{
+  NanScope();
+  int j, ngroups = 10;
+  gid_t *groups;
+  struct passwd *pw;
+  Local<Array> jsGroups = NanNew<Array>();
+
+  if (!((args.Length() > 0) && args[0]->IsString())) {
+    return NanThrowError("you must supply the groupname");
+  }
+
+  String::Utf8Value utfname(args[0]->ToString());
+  groups = new gid_t[ngroups]; //malloc(ngroups * sizeof(gid_t));
+
+  if (groups == NULL) {
+      return NanThrowError("generating groups: ");
+  }
+
+
+    pw = getpwnam(*utfname);
+    if (pw == NULL) {
+        return NanThrowError("getpwnam");
+    }
+
+    if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
+        return NanThrowError("getgrouplist");
+    }
+
+    for (j = 0; j < ngroups; j++) {
+        jsGroups->Set(j, NanNew<Number>(groups[j]));
+    }
+
+    delete[] groups;
+
+    NanReturnValue(jsGroups);
 }
 
 NAN_METHOD(Gid)
