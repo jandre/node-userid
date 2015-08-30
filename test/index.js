@@ -58,4 +58,17 @@ describe("userid", function() {
         
         libGroupName.should.equal(groupName);
     });
+
+    it("gids", function() {
+        var username = execToString("id -u -n");
+
+        var shellGids = execToString("id -G").split(" "); //array of strings
+        var libGids = userid.gids(username);
+
+        libGids.length.should.equal(shellGids.length);
+
+        for(var x in shellGids) 
+            (~libGids.indexOf(shellGids[x] >> 0)).should.not.equal(0); //~-1 = 0
+        
+    });
 });
