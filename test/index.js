@@ -40,4 +40,13 @@ describe("userid", function() {
         
         libGid.should.equal(shellGid);
     });
+
+    it("groupname", function() {
+        var shellGid = execToVal("id -g");
+
+        var groupName = execToString("getent group " + shellGid + " | cut -d: -f1");
+        var libGroupName = userid.groupname(shellGid);
+        
+        libGroupName.should.equal(groupName);
+    });
 });
