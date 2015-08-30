@@ -32,6 +32,15 @@ describe("userid", function() {
         libUid.should.equal(shellUid);
     });
 
+    it("username", function() {
+        var username = execToString("id -u -n");
+
+        var shellUid = execToVal("id -u");
+        var libUsername = userid.username(shellUid);
+
+        libUsername.should.equal(username);
+    });
+
     it("gid", function() {
         var shellGid = execToVal("id -g");
 
