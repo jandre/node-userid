@@ -3,20 +3,18 @@
  * LICENSE file.
  */
 
-#include <v8.h>
-#include <node.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <grp.h>
 #include <pwd.h>
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
+
 #include <nan.h>
 
-using namespace v8;
-using namespace node;
+using v8::FunctionTemplate;
+using v8::Local;
+using v8::Array;
+using v8::String;
+using v8::Number;
+using v8::Object;
 
 NAN_METHOD(Uid);
 NAN_METHOD(UserName);
@@ -25,61 +23,58 @@ NAN_METHOD(Gid);
 NAN_METHOD(Gids);
 NAN_METHOD(GroupList);
 
-void Init(Handle<Object>target)
+NAN_MODULE_INIT(Init)
 {
-  NanScope();
-  target->Set(NanNew<String>("uid"),       NanNew<FunctionTemplate>(
-                Uid)->GetFunction());
-  target->Set(NanNew<String>("username"),  NanNew<FunctionTemplate>(
-                UserName)->GetFunction());
-  target->Set(NanNew<String>("gid"),       NanNew<FunctionTemplate>(
-                Gid)->GetFunction());
-  target->Set(NanNew<String>("gids"),       NanNew<FunctionTemplate>(
-                Gids)->GetFunction());
-  target->Set(NanNew<String>("groupname"), NanNew<FunctionTemplate>(
-                GroupName)->GetFunction());
+  Nan::Set(target, Nan::New("uid").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(Uid)).ToLocalChecked());
+  Nan::Set(target, Nan::New("username").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(UserName)).ToLocalChecked());
+  Nan::Set(target, Nan::New("gid").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(Gid)).ToLocalChecked());
+  Nan::Set(target, Nan::New("gids").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(Gids)).ToLocalChecked());
+  Nan::Set(target, Nan::New("groupname").ToLocalChecked(),
+    Nan::GetFunction(Nan::New<FunctionTemplate>(GroupName)).ToLocalChecked());
 }
 
 NAN_METHOD(GroupName)
 {
-  NanScope();
   struct group *group = NULL;
 
-  if ((args.Length() > 0) && args[0]->IsInt32()) {
-    group = getgrgid(args[0]->Int32Value());
+  if ((info.Length() > 0) && info[0]->IsInt32()) {
+    group = getgrgid(info[0]->Int32Value());
   } else {
-    return NanThrowError("you must supply the gid");
+    return Nan::ThrowError("you must supply the gid");
   }
 
   if (group) {
-    NanReturnValue(NanNew<String>(group->gr_name));
+    info.GetReturnValue().Set(Nan::New(group->gr_name).ToLocalChecked());
   } else {
-    return NanThrowError("gid not found");
+    return Nan::ThrowError("gid not found");
   }
 }
 
 NAN_METHOD(Gids)
 {
-  NanScope();
   int j, ngroups = 4;
   gid_t *groups;
   struct passwd *pw;
-  Local<Array> jsGroups = NanNew<Array>();
+  Local<Array> jsGroups = Nan::New<Array>();
 
-  if (!((args.Length() > 0) && args[0]->IsString())) {
-    return NanThrowError("you must supply the groupname");
+  if (!((info.Length() > 0) && info[0]->IsString())) {
+    return Nan::ThrowError("you must supply the groupname");
   }
 
-  String::Utf8Value utfname(args[0]->ToString());
+  String::Utf8Value utfname(info[0]->ToString());
   groups = new gid_t[ngroups]; //malloc(ngroups * sizeof(gid_t));
 
   if (groups == NULL) {
-      return NanThrowError("generating groups: ");
+      return Nan::ThrowError("generating groups: ");
   }
 
   pw = getpwnam(*utfname);
   if (pw == NULL) {
-      return NanThrowError("getpwnam");
+      return Nan::ThrowError("getpwnam");
   }
   
   if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
@@ -87,89 +82,77 @@ NAN_METHOD(Gids)
       groups = new gid_t[ngroups];
   
       if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
-          return NanThrowError("getgrouplist");
+          return Nan::ThrowError("getgrouplist");
       }
   }
   
   for (j = 0; j < ngroups; j++) {
-      jsGroups->Set(j, NanNew<Number>(groups[j]));
+      Nan::Set(jsGroups, j, Nan::New(groups[j]));
   }
   
   delete[] groups;
-  NanReturnValue(jsGroups);
+  info.GetReturnValue().Set(jsGroups);
 }
 
 NAN_METHOD(Gid)
 {
-  NanScope();
   struct group *group = NULL;
 
-  if ((args.Length() > 0) && args[0]->IsString()) {
-    String::Utf8Value utfname(args[0]->ToString());
+  if ((info.Length() > 0) && info[0]->IsString()) {
+    String::Utf8Value utfname(info[0]->ToString());
     group = getgrnam(*utfname);
   } else {
-    return NanThrowError("you must supply the groupname");
+    return Nan::ThrowError("you must supply the groupname");
   }
 
 
   if (group) {
-    NanReturnValue(NanNew<Integer>(group->gr_gid));
+    info.GetReturnValue().Set(group->gr_gid);
   } else {
-    return NanThrowError("groupname not found");
+    return Nan::ThrowError("groupname not found");
   }
 }
 
-
 NAN_METHOD(UserName)
 {
-  NanScope();
   struct passwd *user = NULL;
 
-  if ((args.Length() > 0) && args[0]->IsInt32()) {
-    user = getpwuid(args[0]->Int32Value());
+  if ((info.Length() > 0) && info[0]->IsInt32()) {
+    user = getpwuid(info[0]->Int32Value());
   } else {
-    return NanThrowError("you must supply the uid");
+    return Nan::ThrowError("you must supply the uid");
   }
 
 
   if (user) {
-    NanReturnValue(NanNew<String>(user->pw_name));
+    info.GetReturnValue().Set(Nan::New(user->pw_name).ToLocalChecked());
   } else {
-    return NanThrowError("uid not found");
+    return Nan::ThrowError("uid not found");
   }
 }
 
 NAN_METHOD(Uid)
 {
-  NanScope();
   struct passwd *user = NULL;
 
-  if ((args.Length() > 0) && args[0]->IsString()) {
-    String::Utf8Value utfname(args[0]->ToString());
+  if ((info.Length() > 0) && info[0]->IsString()) {
+    String::Utf8Value utfname(info[0]->ToString());
     user = getpwnam(*utfname);
   } else {
-    return NanThrowError("you must supply the username");
+    return Nan::ThrowError("you must supply the username");
   }
 
 
   if (user) {
-    v8::Local<v8::Object> obj = NanNew<Object>();
-    obj->Set(NanNew<String>("uid"), NanNew<Number>(user->pw_uid));
-    obj->Set(NanNew<String>("gid"), NanNew<Number>(user->pw_gid));
+    Local<Object> obj = Nan::New<Object>();
 
-    NanReturnValue(obj);
+    Nan::Set(obj, Nan::New("uid").ToLocalChecked(), Nan::New(user->pw_uid));
+    Nan::Set(obj, Nan::New("gid").ToLocalChecked(), Nan::New(user->pw_gid));
+
+    info.GetReturnValue().Set(obj);
   } else {
-    // fprintf(stderr, "Error: %s\n", strerror(errno));
-    return NanThrowError("username not found");
+    return Nan::ThrowError("username not found");
   }
 }
 
-
-extern "C" {
-static void init(Handle<Object>target)
-{
-  Init(target);
-}
-
-NODE_MODULE(userid, init);
-}
+NODE_MODULE(userid, Init);

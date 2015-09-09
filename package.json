@@ -16,7 +16,7 @@
   "gypfile": true,
   "dependencies": {
     "mocha": "^2.2.5",
-    "nan": "^1.4.1",
+    "nan": "^2.0.9",
     "should": "^7.1.0"
   }
 }
