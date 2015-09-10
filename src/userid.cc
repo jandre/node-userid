@@ -26,15 +26,16 @@ NAN_METHOD(GroupList);
 NAN_MODULE_INIT(Init)
 {
   Nan::Set(target, Nan::New("uid").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(Uid)).ToLocalChecked());
+           Nan::GetFunction(Nan::New<FunctionTemplate>(Uid)).ToLocalChecked());
   Nan::Set(target, Nan::New("username").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(UserName)).ToLocalChecked());
+           Nan::GetFunction(Nan::New<FunctionTemplate>(UserName)).ToLocalChecked());
   Nan::Set(target, Nan::New("gid").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(Gid)).ToLocalChecked());
+           Nan::GetFunction(Nan::New<FunctionTemplate>(Gid)).ToLocalChecked());
   Nan::Set(target, Nan::New("gids").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(Gids)).ToLocalChecked());
+           Nan::GetFunction(Nan::New<FunctionTemplate>(Gids)).ToLocalChecked());
   Nan::Set(target, Nan::New("groupname").ToLocalChecked(),
-    Nan::GetFunction(Nan::New<FunctionTemplate>(GroupName)).ToLocalChecked());
+           Nan::GetFunction(Nan::New<FunctionTemplate>(
+                              GroupName)).ToLocalChecked());
 }
 
 NAN_METHOD(GroupName)
@@ -57,39 +58,53 @@ NAN_METHOD(GroupName)
 NAN_METHOD(Gids)
 {
   int j, ngroups = 4;
+
+#ifdef __APPLE__
+  int *groups;
+#else // ifdef __APPLE__
   gid_t *groups;
+#endif // ifdef __APPLE__
   struct passwd *pw;
-  Local<Array> jsGroups = Nan::New<Array>();
+  Local<Array>   jsGroups = Nan::New<Array>();
 
   if (!((info.Length() > 0) && info[0]->IsString())) {
     return Nan::ThrowError("you must supply the groupname");
   }
 
   String::Utf8Value utfname(info[0]->ToString());
-  groups = new gid_t[ngroups]; //malloc(ngroups * sizeof(gid_t));
+#ifdef __APPLE__
+  groups = new int[ngroups];   // malloc(ngroups * sizeof(gid_t));
+#else // ifdef __APPLE__
+  groups = new gid_t[ngroups]; // malloc(ngroups * sizeof(gid_t));
+#endif // ifdef __APPLE__
 
   if (groups == NULL) {
-      return Nan::ThrowError("generating groups: ");
+    return Nan::ThrowError("generating groups: ");
   }
 
   pw = getpwnam(*utfname);
+
   if (pw == NULL) {
-      return Nan::ThrowError("getpwnam");
+    return Nan::ThrowError("getpwnam");
   }
-  
+
   if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
-      delete[] groups;
-      groups = new gid_t[ngroups];
-  
-      if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
-          return Nan::ThrowError("getgrouplist");
-      }
+    delete[] groups;
+#ifdef __APPLE__
+    groups = new int[ngroups];
+#else // ifdef __APPLE__
+    groups = new gid_t[ngroups];
+#endif // ifdef __APPLE__
+
+    if (getgrouplist(*utfname, pw->pw_gid, groups, &ngroups) == -1) {
+      return Nan::ThrowError("getgrouplist");
+    }
   }
-  
+
   for (j = 0; j < ngroups; j++) {
-      Nan::Set(jsGroups, j, Nan::New(groups[j]));
+    Nan::Set(jsGroups, j, Nan::New(groups[j]));
   }
-  
+
   delete[] groups;
   info.GetReturnValue().Set(jsGroups);
 }
