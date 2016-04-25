@@ -15,8 +15,10 @@
   "license": "GPLv3",
   "gypfile": true,
   "dependencies": {
+    "nan": "^2.0.9"
+  },
+  "devDependencies": {
     "mocha": "^2.2.5",
-    "nan": "^2.0.9",
     "should": "^7.1.0"
   }
 }
