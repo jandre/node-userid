@@ -6,7 +6,13 @@
 #include <sys/types.h>
 #include <grp.h>
 #include <pwd.h>
-
+#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#include <sys/param.h>
+#if defined(BSD)
+	/* BSD needs unistd.h for getgrouplist function*/
+#include <unistd.h>
+#endif
+#endif
 #include <nan.h>
 
 using v8::FunctionTemplate;
