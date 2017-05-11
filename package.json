@@ -12,7 +12,7 @@
     "url": "https://github.com/jandre/node-userid.git"
   },
   "author": "Jen Andre <jandre@gmail.com>",
-  "license": "GPLv3",
+  "license": "MIT",
   "gypfile": true,
   "dependencies": {
     "nan": "^2.0.9"
